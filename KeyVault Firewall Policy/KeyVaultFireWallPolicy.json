@@ -1,0 +1,94 @@
+{
+    "displayName": "Configure key vaults to enable firewall",
+    "policyType": "Custom",
+    "mode": "Indexed",
+    "description": "Enable the key vault firewall so that the key vault is not accessible by default to any public IPs. Apply BCBSLA IP Addresses and Subnets",
+    "metadata": {
+        "version": "1.0.0",
+        "category": "Key Vault"
+    },
+    "parameters": {
+        "subnetId": {
+            "type": "String",
+            "metadata": {
+                "displayName": "Subnet ID",
+                "description": "Resource ID of the subnet that must be included in the Key Vault's virtual network rules"
+            }
+        },
+        "ipAddressesComp": {
+            "type": "Array",
+            "defaultValue": [],
+            "metadata": {
+                "displayName": "IP Addresses for Compliance",
+                "description": "List of IP Addresses that must be included in the Key Vault's firewall settings. Array of Strings."
+            }
+        },
+        "ipAddressesApp": {
+            "type": "Array",
+            "defaultValue": [],
+            "metadata": {
+                "displayName": "IP Addresses for Application",
+                "description": "List of IP Addresses that must be included in the Key Vault's firewall settings. Array of objects."
+            }
+        }
+    },
+    "policyRule": {
+        "if": {
+            "allOf": [
+                {
+                    "field": "type",
+                    "equals": "Microsoft.KeyVault/vaults"
+                },
+                {
+                    "anyOf": [
+                        {
+                            "field": "Microsoft.KeyVault/vaults/networkAcls.virtualNetworkRules[*].id",
+                            "notContains": "[parameters('subnetId')]"
+                        },
+                        {
+                            "allOf": [
+                                {
+                                    "field": "Microsoft.KeyVault/vaults/networkAcls.ipRules[*].value",
+                                    "notIn": "[parameters('ipAddressesComp')]"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "Microsoft.KeyVault/vaults/networkAcls.bypass",
+                            "notEquals": "AzureServices"
+                        },
+                        {
+                            "field": "Microsoft.KeyVault/vaults/networkAcls.defaultAction",
+                            "notEquals": "deny"
+                        }
+                    ]
+                }
+            ]
+        },
+        "then": {
+            "effect": "modify",
+            "details": {
+                "roleDefinitionIds": [
+                    "/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c"
+                ],
+                "conflictEffect": "audit",
+                "operations": [
+                    {
+                        "operation": "addOrReplace",
+                        "field": "Microsoft.KeyVault/vaults/networkAcls",
+                        "value": {
+                            "bypass": "AzureServices",
+                            "defaultAction": "deny",
+                            "virtualNetworkRules": [
+                                {
+                                    "id": "[parameters('subnetId')]"
+                                }
+                            ],
+                            "ipRules": "[parameters('ipAddressesApp')]"
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}
