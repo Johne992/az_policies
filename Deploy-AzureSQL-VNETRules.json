@@ -1,0 +1,59 @@
+{
+  "properties": {
+    "displayName": "Enforce SQL Server VNet rules",
+    "description": "Deploys required VNet rules",
+    "mode": "All",
+    "parameters": {
+      "subnetId": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Subnet ID",
+          "strongType": "Microsoft.Network/virtualNetworks/subnets"
+        }
+      },
+      "ruleName": {
+        "type": "String",
+        "defaultValue": "required-vnet-rule",
+        "metadata": {
+          "displayName": "Rule Name",
+          "description": "Name for the VNet rule"
+        }
+      }
+    },
+    "policyRule": {
+      "if": {
+        "field": "type",
+        "equals": "Microsoft.Sql/servers"
+      },
+      "then": {
+        "effect": "DeployIfNotExists",
+        "details": {
+          "type": "Microsoft.Sql/servers/virtualNetworkRules",
+          "roleDefinitionIds": [
+            "/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c"
+          ],
+          "deployment": {
+            "properties": {
+              "mode": "incremental",
+              "template": {
+                "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                "contentVersion": "1.0.0.0",
+                "resources": [
+                  {
+                    "type": "Microsoft.Sql/servers/virtualNetworkRules",
+                    "apiVersion": "2023-05-01-preview",
+                    "name": "[concat(parameters('ruleName'), '-', uniqueString(parameters('subnetId')))]",
+                    "properties": {
+                      "virtualNetworkSubnetId": "[parameters('subnetId')]",
+                      "ignoreMissingVnetServiceEndpoint": false
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
