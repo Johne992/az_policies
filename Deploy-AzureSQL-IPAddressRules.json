@@ -1,79 +1,62 @@
 {
-  "displayName": "Azure SQL: Enforce IP Firewall Rules",
-  "policyType": "Custom",
-  "mode": "All",
-  "description": "Enforce specific IP ranges in Azure SQL Server firewall rules.",
-  "metadata": {
-    "version": "1.0.0",
-    "category": "SQL"
-  },
-  "parameters": {
-    "startIpAddress": {
-      "type": "String",
-      "metadata": {
-        "displayName": "Start IP Address",
-        "description": "Start of the allowed IP range."
-      }
-    },
-    "endIpAddress": {
-      "type": "String",
-      "metadata": {
-        "displayName": "End IP Address",
-        "description": "End of the allowed IP range."
-      }
-    }
-  },
-  "policyRule": {
-    "if": {
-      "allOf": [
-        {
-          "field": "type",
-          "equals": "Microsoft.Sql/servers"
-        },
-        {
-          "count": {
-            "field": "Microsoft.Sql/servers/firewallRules[*]",
-            "where": {
-              "allOf": [
-                {
-                  "field": "Microsoft.Sql/servers/firewallRules[*].startIpAddress",
-                  "equals": "[parameters('startIpAddress')]"
-                },
-                {
-                  "field": "Microsoft.Sql/servers/firewallRules[*].endIpAddress",
-                  "equals": "[parameters('endIpAddress')]"
-                }
-              ]
-            }
-          },
-          "equals": 0
+  "properties": {
+    "displayName": "Enforce SQL Server IP firewall rules",
+    "description": "Deploys required IP range rules",
+    "mode": "All",
+    "parameters": {
+      "startIpAddress": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Start IP Address",
+          "description": "First IP in required range"
         }
-      ]
+      },
+      "endIpAddress": {
+        "type": "String",
+        "metadata": {
+          "displayName": "End IP Address",
+          "description": "Last IP in required range"
+        }
+      },
+      "ruleName": {
+        "type": "String",
+        "defaultValue": "approved-ip-range",
+        "metadata": {
+          "displayName": "Rule Name",
+          "description": "Name for the firewall rule"
+        }
+      }
     },
-    "then": {
-      "effect": "deployIfNotExists",
-      "details": {
-        "type": "Microsoft.Sql/servers/firewallRules",
-        "roleDefinitionIds": [
-          "/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c"
-        ],
-        "deployment": {
-          "properties": {
-            "mode": "incremental",
-            "template": {
-              "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-              "contentVersion": "1.0.0.0",
-              "resources": [
-                {
-                  "type": "Microsoft.Sql/servers/firewallRules",
-                  "apiVersion": "2021-11-01",
-                  "name": "[concat(field('name'), '/enforced-ip-rule')]",
-                  "properties": {
-                    "startIpAddress": "[parameters('startIpAddress')]",
-                    "endIpAddress": "[parameters('endIpAddress')]"
+    "policyRule": {
+      "if": {
+        "field": "type",
+        "equals": "Microsoft.Sql/servers"
+      },
+      "then": {
+        "effect": "DeployIfNotExists",
+        "details": {
+          "type": "Microsoft.Sql/servers/firewallRules",
+          "roleDefinitionIds": [
+            "/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c"
+          ],
+          "deployment": {
+            "properties": {
+              "mode": "incremental",
+              "template": {
+                "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                "contentVersion": "1.0.0.0",
+                "resources": [
+                  {
+                    "type": "Microsoft.Sql/servers/firewallRules",
+                    "apiVersion": "2023-05-01-preview",
+                    "name": "[concat(parameters('ruleName'), '-', uniqueString(parameters('startIpAddress'), parameters('endIpAddress')))]",
+                    "properties": {
+                      "startIpAddress": "[parameters('startIpAddress')]",
+                      "endIpAddress": "[parameters('endIpAddress')]"
+                    }
                   }
-                }
-              ]
+                ]
+              }
             }
           }
         }
