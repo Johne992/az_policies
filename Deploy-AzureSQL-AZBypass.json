@@ -1,32 +1,39 @@
 {
   "properties": {
-    "displayName": "Audit Azure Services bypass",
-    "description": "Audits if Azure services bypass is enabled",
-    "mode": "Indexed",
+    "displayName": "Enforce Azure Services bypass",
+    "description": "Ensures Azure services can bypass firewall",
+    "mode": "All",
     "policyRule": {
       "if": {
         "field": "type",
         "equals": "Microsoft.Sql/servers"
       },
       "then": {
-        "effect": "AuditIfNotExists",
+        "effect": "DeployIfNotExists",
         "details": {
           "type": "Microsoft.Sql/servers/firewallRules",
-          "existenceCondition": {
-            "allOf": [
-              {
-                "field": "Microsoft.Sql/servers/firewallRules/name",
-                "like": "AllowAllWindowsAzureIps"
-              },
-              {
-                "field": "Microsoft.Sql/servers/firewallRules/startIpAddress",
-                "equals": "0.0.0.0"
-              },
-              {
-                "field": "Microsoft.Sql/servers/firewallRules/endIpAddress",
-                "equals": "0.0.0.0"
+          "roleDefinitionIds": [
+            "/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c"
+          ],
+          "deployment": {
+            "properties": {
+              "mode": "incremental",
+              "template": {
+                "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                "contentVersion": "1.0.0.0",
+                "resources": [
+                  {
+                    "type": "Microsoft.Sql/servers/firewallRules",
+                    "apiVersion": "2023-05-01-preview",
+                    "name": "AllowAllWindowsAzureIps",
+                    "properties": {
+                      "startIpAddress": "0.0.0.0",
+                      "endIpAddress": "0.0.0.0"
+                    }
+                  }
+                ]
               }
-            ]
+            }
           }
         }
       }
