@@ -1,0 +1,37 @@
+{
+  "mode": "All",
+  "policyRule": {
+    "if": {
+      "allOf": [
+        { "field": "type", "equals": "Microsoft.Sql/servers" },
+        { "field": "Microsoft.Sql/servers/publicNetworkAccess", "notEquals": "Enabled" }
+      ]
+    },
+    "then": {
+      "effect": "deployIfNotExists",
+      "details": {
+        "type": "Microsoft.Sql/servers",
+        "roleDefinitionIds": ["/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c"],
+        "deployment": {
+          "properties": {
+            "mode": "incremental",
+            "template": {
+              "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+              "contentVersion": "1.0.0.0",
+              "resources": [
+                {
+                  "type": "Microsoft.Sql/servers",
+                  "apiVersion": "2023-05-01-preview",
+                  "name": "[field('name')]",
+                  "properties": {
+                    "publicNetworkAccess": "Enabled"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}
