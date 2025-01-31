@@ -1,7 +1,7 @@
 {
   "properties": {
-    "displayName": "Enforce SQL Server VNet rules",
-    "description": "Deploys required VNet rules",
+    "displayName": "Enforce SQL Server VNet Rules",
+    "description": "Ensures specified VNet subnet access is configured",
     "mode": "All",
     "parameters": {
       "subnetId": {
@@ -22,8 +22,30 @@
     },
     "policyRule": {
       "if": {
-        "field": "type",
-        "equals": "Microsoft.Sql/servers"
+        "allOf": [
+          {
+            "field": "type",
+            "equals": "Microsoft.Sql/servers"
+          },
+          {
+            "count": {
+              "field": "Microsoft.Sql/servers/virtualNetworkRules[*]",
+              "where": {
+                "allOf": [
+                  {
+                    "field": "Microsoft.Sql/servers/virtualNetworkRules[*].virtualNetworkSubnetId",
+                    "equals": "[parameters('subnetId')]"
+                  },
+                  {
+                    "field": "name",
+                    "equals": "[parameters('ruleName')]"
+                  }
+                ]
+              }
+            },
+            "equals": 0
+          }
+        ]
       },
       "then": {
         "effect": "DeployIfNotExists",
